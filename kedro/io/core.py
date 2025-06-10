@@ -831,9 +831,11 @@ class AbstractVersionedDataset(AbstractDataset[_DI, _DO], abc.ABC):
         save_version = self.resolve_save_version()
         versioned_path = self._get_versioned_path(save_version)  # type: ignore[arg-type]
 
-        if self._exists_function(str(versioned_path)):
+        # Check if the exact file/object exists rather than just the directory
+        full_path = versioned_path
+        if self._exists_function(str(full_path)):
             raise DatasetError(
-                f"Save path '{versioned_path}' for {self!s} must not exist if "
+                f"Save path '{full_path}' for {self!s} must not exist if "
                 f"versioning is enabled."
             )
 

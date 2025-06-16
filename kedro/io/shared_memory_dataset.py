@@ -1,15 +1,3 @@
-from __future__ import annotations
-
-import pickle
-from typing import TYPE_CHECKING, Any
-
-from kedro.io.core import AbstractDataset, DatasetError
-
-if TYPE_CHECKING:
-    from multiprocessing.managers import SyncManager
-
-
-class SharedMemoryDataset(AbstractDataset):
     """``SharedMemoryDataset`` is a wrapper class for a shared MemoryDataset in SyncManager."""
 
     def __init__(self, manager: SyncManager | None = None):
@@ -26,6 +14,7 @@ class SharedMemoryDataset(AbstractDataset):
             self.shared_memory_dataset = manager.MemoryDataset()  # type: ignore[attr-defined]
         else:
             self.shared_memory_dataset = None
+        self._lock = multiprocessing.Lock()
 
     def set_manager(self, manager: SyncManager) -> None:
         self.shared_memory_dataset = manager.MemoryDataset()  # type: ignore[attr-defined]
@@ -37,10 +26,15 @@ class SharedMemoryDataset(AbstractDataset):
         return getattr(self.shared_memory_dataset, name)  # pragma: no cover
 
     def load(self) -> Any:
-        return self.shared_memory_dataset.load()
+        self._lock.acquire()
+        try:
+            return self.shared_memory_dataset.load()
+        finally:
+            self._lock.release()
 
     def save(self, data: Any) -> None:
         """Calls save method of a shared MemoryDataset in SyncManager."""
+        self._lock.acquire()
         try:
             self.shared_memory_dataset.save(data)
         except Exception as exc:
@@ -53,12 +47,5 @@ class SharedMemoryDataset(AbstractDataset):
                     "implicit memory datasets can only be used with serialisable data"
                 ) from serialisation_exc
             raise exc  # pragma: no cover
-
-    def _describe(self) -> dict[str, Any]:
-        """SharedMemoryDataset doesn't have any constructor argument to return."""
-        return {}
-
-    def _exists(self) -> bool:
-        if not self.shared_memory_dataset:
-            return False
-        return self.shared_memory_dataset.exists()  # type: ignore[no-any-return]
+        finally:
+            self._lock.release()

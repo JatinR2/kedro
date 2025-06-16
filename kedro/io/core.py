@@ -150,6 +150,17 @@ class AbstractDataset(abc.ABC, Generic[_DI, _DO]):
     """
     _EPHEMERAL = False
 
+    def _save(self, data: _DO) -> None:
+        if getattr(self, "version", None) and self.version.save:
+            save_path = Path(self._get_save_path())
+            if save_path.exists():
+                raise DatasetError(
+                    f"Save path '{self._get_save_path()}' for "
+                    f"{self.__class__.__name__}(filepath={self._filepath}, "
+                    f"version=Version(load={self.version.load}, save='{self.version.save}')) "
+                    f"must not exist if versioning is enabled."
+                )
+
     @classmethod
     def from_config(
         cls: type,
@@ -287,6 +298,17 @@ class AbstractDataset(abc.ABC, Generic[_DI, _DO]):
 
         return f"{type(self).__name__}({_to_str(self._describe(), True)})"
 
+    def _save(self, data: _DO) -> None:
+        if getattr(self, "version", None) and self.version.save:
+            save_path = Path(self._get_save_path())
+            if save_path.exists():
+                raise DatasetError(
+                    f"Save path '{self._get_save_path()}' for "
+                    f"{self.__class__.__name__}(filepath={self._filepath}, "
+                    f"version=Version(load={self.version.load}, save='{self.version.save}')) "
+                    f"must not exist if versioning is enabled."
+                )
+
     @classmethod
     def _load_wrapper(cls, load_func: Callable[[Self], _DO]) -> Callable[[Self], _DO]:
         """Decorate `load_func` with logging and error handling code."""
@@ -308,6 +330,17 @@ class AbstractDataset(abc.ABC, Generic[_DI, _DO]):
         load.__annotations__["return"] = load_func.__annotations__.get("return")
         load.__loadwrapped__ = True  # type: ignore[attr-defined]
         return load
+
+    def _save(self, data: _DO) -> None:
+        if getattr(self, "version", None) and self.version.save:
+            save_path = Path(self._get_save_path())
+            if save_path.exists():
+                raise DatasetError(
+                    f"Save path '{self._get_save_path()}' for "
+                    f"{self.__class__.__name__}(filepath={self._filepath}, "
+                    f"version=Version(load={self.version.load}, save='{self.version.save}')) "
+                    f"must not exist if versioning is enabled."
+                )
 
     @classmethod
     def _save_wrapper(
@@ -842,6 +875,17 @@ class AbstractVersionedDataset(AbstractDataset[_DI, _DO], abc.ABC):
     def _get_versioned_path(self, version: str) -> PurePosixPath:
         return self._filepath / version / self._filepath.name
 
+    def _save(self, data: _DO) -> None:
+        if getattr(self, "version", None) and self.version.save:
+            save_path = Path(self._get_save_path())
+            if save_path.exists():
+                raise DatasetError(
+                    f"Save path '{self._get_save_path()}' for "
+                    f"{self.__class__.__name__}(filepath={self._filepath}, "
+                    f"version=Version(load={self.version.load}, save='{self.version.save}')) "
+                    f"must not exist if versioning is enabled."
+                )
+
     @classmethod
     def _save_wrapper(
         cls, save_func: Callable[[Self, _DI], None]
@@ -978,6 +1022,17 @@ class CatalogProtocol(Protocol[_C]):
     def config_resolver(self) -> CatalogConfigResolver:
         """Return a copy of the datasets dictionary."""
         ...
+
+    def _save(self, data: _DO) -> None:
+        if getattr(self, "version", None) and self.version.save:
+            save_path = Path(self._get_save_path())
+            if save_path.exists():
+                raise DatasetError(
+                    f"Save path '{self._get_save_path()}' for "
+                    f"{self.__class__.__name__}(filepath={self._filepath}, "
+                    f"version=Version(load={self.version.load}, save='{self.version.save}')) "
+                    f"must not exist if versioning is enabled."
+                )
 
     @classmethod
     def from_config(cls, catalog: dict[str, dict[str, Any]] | None) -> _C:

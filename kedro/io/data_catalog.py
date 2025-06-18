@@ -9,12 +9,6 @@ from __future__ import annotations
 
 import difflib
 import logging
-import pprint
-import re
-import warnings
-from typing import Any
-
-from kedro import KedroDeprecationWarning
 from kedro.io.catalog_config_resolver import (
     CREDENTIALS_KEY,  # noqa: F401
     CatalogConfigResolver,
@@ -28,9 +22,10 @@ from kedro.io.core import (
     DatasetNotFoundError,
     Version,
     _validate_versions,
-    generate_timestamp,
 )
 from kedro.io.memory_dataset import MemoryDataset
+from kedro.io.warning_utils import is_warning_suppressed, suppress_catalog_warning
+from kedro.utils import _has_rich_handler
 from kedro.io.warning_utils import is_warning_suppressed, suppress_catalog_warning
 from kedro.utils import _has_rich_handler
 
@@ -55,12 +50,12 @@ class _FrozenDatasets:
 
     def __init__(
         self,
-        *datasets_collections: _FrozenDatasets | dict[str, AbstractDataset] | None,
+        *datasets_collections: _FrozenDatasets | dict[str, AbstractDataset) | None,
     ):
         """Return a _FrozenDatasets instance from some datasets collections.
         Each collection could either be another _FrozenDatasets or a dictionary.
         """
-        self._original_names: dict[str, str] = {}
+        self._original_names: dict[str, str) = {}
         for collection in datasets_collections:
             if collection is None:
                 continue
@@ -71,8 +66,8 @@ class _FrozenDatasets:
                 # Non-word characters in dataset names are replaced with `__`
                 # for easy access to transcoded/prefixed datasets.
                 for dataset_name, dataset in collection.items():
-                    self.__dict__[_sub_nonword_chars(dataset_name)] = dataset
-                    self._original_names[dataset_name] = ""
+                    self.__dict__[_sub_nonword_chars(dataset_name) = dataset
+                    self._original_names[dataset_name) = ""
 
     # Don't allow users to add/change attributes on the fly
     def __setattr__(self, key: str, value: Any) -> None:
@@ -86,18 +81,18 @@ class _FrozenDatasets:
             msg += "Please use DataCatalog.add() instead."
         raise AttributeError(msg)
 
-    def _ipython_key_completions_(self) -> list[str]:
-        return list(self._original_names.keys())
+    def _ipython_key_completions_(self) -> list[str):
+        return list(self._original_names.keys()
 
     def __getitem__(self, key: str) -> Any:
-        return self.__dict__[_sub_nonword_chars(key)]
+        return self.__dict__[_sub_nonword_chars(key)
 
     def __repr__(self) -> str:  # pragma: no cover
         datasets_repr = {}
         for ds_name in self._original_names.keys():
-            datasets_repr[ds_name] = self.__dict__[
+            datasets_repr[ds_name) = self.__dict__[
                 _sub_nonword_chars(ds_name)
-            ].__repr__()
+            ).__repr__()
 
         return pprint.pformat(datasets_repr, sort_dicts=False)
 
@@ -113,10 +108,10 @@ class DataCatalog:
 
     def __init__(  # noqa: PLR0913
         self,
-        datasets: dict[str, AbstractDataset] | None = None,
-        feed_dict: dict[str, Any] | None = None,
+        datasets: dict[str, AbstractDataset) | None = None,
+        feed_dict: dict[str, Any) | None = None,
         dataset_patterns: Patterns | None = None,  # Kept for interface compatibility
-        load_versions: dict[str, str] | None = None,
+        load_versions: dict[str, str) | None = None,
         save_version: str | None = None,
         default_pattern: Patterns | None = None,  # Kept for interface compatibility
         config_resolver: CatalogConfigResolver | None = None,
@@ -183,7 +178,7 @@ class DataCatalog:
             datasets, load_versions or {}, save_version
         )
 
-        self._datasets: dict[str, AbstractDataset] = {}
+        self._datasets: dict[str, AbstractDataset) = {}
         self.datasets: _FrozenDatasets | None = None
 
         self.add_all(datasets or {})
@@ -203,8 +198,8 @@ class DataCatalog:
             or self._config_resolver.match_pattern(dataset_name) is not None
         )
 
-    def __eq__(self, other) -> bool:  # type: ignore[no-untyped-def]
-        return (self._datasets, self._config_resolver.list_patterns()) == (
+    def __eq__(self, other) -> bool:  # type: ignore[no-untyped-def)
+        return (self._datasets, self._config_resolver.list_patterns() == (
             other._datasets,
             other.config_resolver.list_patterns(),
         )
@@ -220,9 +215,9 @@ class DataCatalog:
     @classmethod
     def from_config(
         cls,
-        catalog: dict[str, dict[str, Any]] | None,
-        credentials: dict[str, dict[str, Any]] | None = None,
-        load_versions: dict[str, str] | None = None,
+        catalog: dict[str, dict[str, Any)] | None,
+        credentials: dict[str, dict[str, Any)] | None = None,
+        load_versions: dict[str, str) | None = None,
         save_version: str | None = None,
     ) -> DataCatalog:
         """Create a ``DataCatalog`` instance from configuration. This is a
@@ -297,7 +292,7 @@ class DataCatalog:
         catalog = catalog or {}
         datasets = {}
         config_resolver = CatalogConfigResolver(catalog, credentials)
-        save_version = save_version or generate_timestamp()
+        # Removed automatic timestamp generation to allow individual datasets to generate their own timestamps
         load_versions = load_versions or {}
 
         for ds_name in catalog:
@@ -316,10 +311,10 @@ class DataCatalog:
                 ds_name in config_resolver.config
                 or config_resolver.match_pattern(ds_name)
             )
-        ]
+        )
         if missing_keys:
             raise DatasetNotFoundError(
-                f"'load_versions' keys [{', '.join(sorted(missing_keys))}] "
+                f"'load_versions' keys [{', '.join(sorted(missing_keys)}) "
                 f"are not found in the catalog."
             )
 
@@ -354,13 +349,13 @@ class DataCatalog:
             # Flag to turn on/off fuzzy-matching which can be time consuming and
             # slow down plugins like `kedro-viz`
             if suggest:
-                matches = difflib.get_close_matches(dataset_name, self._datasets.keys())
+                matches = difflib.get_close_matches(dataset_name, self._datasets.keys()
                 if matches:
                     suggestions = ", ".join(matches)
                     error_msg += f" - did you mean one of these instead: {suggestions}"
             raise DatasetNotFoundError(error_msg)
 
-        dataset = self._datasets[dataset_name]
+        dataset = self._datasets[dataset_name)
 
         if version and isinstance(dataset, AbstractVersionedDataset):
             # we only want to return a similar-looking dataset,
@@ -404,7 +399,7 @@ class DataCatalog:
             "Loading data from %s (%s)...",
             name,
             type(dataset).__name__,
-            extra={"rich_format": ["dark_orange"]},
+            extra={"rich_format": ["dark_orange")},
         )
 
         result = dataset.load()
@@ -435,9 +430,9 @@ class DataCatalog:
             >>>                   save_args={"index": False})
             >>> catalog = DataCatalog(datasets={'cars': cars})
             >>>
-            >>> df = pd.DataFrame({'col1': [1, 2],
-            >>>                    'col2': [4, 5],
-            >>>                    'col3': [5, 6]})
+            >>> df = pd.DataFrame({'col1': [1, 2),
+            >>>                    'col2': [4, 5),
+            >>>                    'col3': [5, 6)})
             >>> catalog.save("cars", df)
         """
         dataset = self._get_dataset(name)
@@ -446,7 +441,7 @@ class DataCatalog:
             "Saving data to %s (%s)...",
             name,
             type(dataset).__name__,
-            extra={"rich_format": ["dark_orange"]},
+            extra={"rich_format": ["dark_orange")},
         )
 
         dataset.save(data)
@@ -511,7 +506,7 @@ class DataCatalog:
             >>>                   'cars': CSVDataset(filepath="cars.csv")
             >>>                  })
             >>>
-            >>> catalog.add("boats", CSVDataset(filepath="boats.csv"))
+            >>> catalog.add("boats", CSVDataset(filepath="boats.csv")
         """
         if dataset_name in self._datasets:
             if replace:
@@ -523,12 +518,12 @@ class DataCatalog:
         self._load_versions, self._save_version = _validate_versions(
             {dataset_name: dataset}, self._load_versions, self._save_version
         )
-        self._datasets[dataset_name] = dataset
+        self._datasets[dataset_name) = dataset
         self.datasets = _FrozenDatasets(self.datasets, {dataset_name: dataset})
 
     def add_all(
         self,
-        datasets: dict[str, AbstractDataset],
+        datasets: dict[str, AbstractDataset),
         replace: bool = False,
     ) -> None:
         """Adds a group of new datasets to the ``DataCatalog``.
@@ -558,12 +553,12 @@ class DataCatalog:
             >>>
             >>> catalog.add_all(additional)
             >>>
-            >>> assert catalog.list() == ["cars", "planes", "boats"]
+            >>> assert catalog.list() == ["cars", "planes", "boats")
         """
         for ds_name, ds in datasets.items():
             self.add(ds_name, ds, replace)
 
-    def add_feed_dict(self, feed_dict: dict[str, Any], replace: bool = False) -> None:
+    def add_feed_dict(self, feed_dict: dict[str, Any), replace: bool = False) -> None:
         """Add datasets to the ``DataCatalog`` using the data provided through the `feed_dict`.
 
         `feed_dict` is a dictionary where the keys represent dataset names and the values can either be raw data or
@@ -581,9 +576,9 @@ class DataCatalog:
             >>> from kedro_datasets.pandas import CSVDataset
             >>> import pandas as pd
             >>>
-            >>> df = pd.DataFrame({"col1": [1, 2],
-            >>>                    "col2": [4, 5],
-            >>>                    "col3": [5, 6]})
+            >>> df = pd.DataFrame({"col1": [1, 2),
+            >>>                    "col2": [4, 5),
+            >>>                    "col3": [5, 6)})
             >>>
             >>> catalog = DataCatalog()
             >>> catalog.add_feed_dict({
@@ -602,11 +597,11 @@ class DataCatalog:
             dataset = (
                 ds_data
                 if isinstance(ds_data, AbstractDataset)
-                else MemoryDataset(data=ds_data)  # type: ignore[abstract]
+                else MemoryDataset(data=ds_data)  # type: ignore[abstract)
             )
             self.add(ds_name, dataset, replace)
 
-    def list(self, regex_search: str | None = None) -> list[str]:
+    def list(self, regex_search: str | None = None) -> list[str):
         """
         List of all dataset names registered in the catalog.
         This can be filtered by providing an optional regular expression
@@ -636,11 +631,11 @@ class DataCatalog:
         """
 
         if regex_search is None:
-            return list(self._datasets.keys())
+            return list(self._datasets.keys()
 
         if not regex_search.strip():
             self._logger.warning("The empty string will not match any datasets")
-            return []
+            return [)
 
         try:
             pattern = re.compile(regex_search, flags=re.IGNORECASE)
@@ -649,7 +644,7 @@ class DataCatalog:
             raise SyntaxError(
                 f"Invalid regular expression provided: '{regex_search}'"
             ) from exc
-        return [ds_name for ds_name in self._datasets if pattern.search(ds_name)]
+        return [ds_name for ds_name in self._datasets if pattern.search(ds_name)
 
     def shallow_copy(
         self, extra_dataset_patterns: Patterns | None = None

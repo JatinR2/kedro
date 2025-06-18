@@ -28,7 +28,7 @@ from kedro.io.core import (
     DatasetNotFoundError,
     Version,
     _validate_versions,
-    generate_timestamp,
+
     parse_dataset_definition,
 )
 from kedro.io.memory_dataset import MemoryDataset, _is_memory_dataset
@@ -369,7 +369,7 @@ class KedroDataCatalog(CatalogProtocol):
         """
         catalog = catalog or {}
         config_resolver = CatalogConfigResolver(catalog, credentials)
-        save_version = save_version or generate_timestamp()
+        # Removed automatic timestamp generation to allow individual datasets to generate their own timestamps
         load_versions = load_versions or {}
 
         missing_keys = [

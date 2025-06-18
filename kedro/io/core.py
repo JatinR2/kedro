@@ -509,7 +509,7 @@ def generate_timestamp() -> str:
 
     """
     current_ts = datetime.now(tz=timezone.utc).strftime(VERSION_FORMAT)
-    return current_ts[:-4] + current_ts[-1:]  # Don't keep microseconds
+    return current_ts[:-3] + current_ts[-1:]  # Keep 3 digits of microsecond precision (milliseconds)
 
 
 class Version(namedtuple("Version", ["load", "save"])):

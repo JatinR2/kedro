@@ -234,6 +234,12 @@ class KedroCLI(CommandCollection):
         plugins = load_entry_points("project")
 
         try:
+            # Validate package_name to prevent arbitrary code execution
+            if not self._metadata.package_name.replace("_", "").replace(".", "").isalnum():
+                raise KedroCliError(
+                    f"Invalid package name '{self._metadata.package_name}'. "
+                    "Package name must contain only alphanumeric characters, dots, and underscores."
+                )
             project_cli = importlib.import_module(f"{self._metadata.package_name}.cli")
             # fail gracefully if cli.py does not exist
         except ModuleNotFoundError:

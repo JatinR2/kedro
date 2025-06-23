@@ -361,11 +361,17 @@ KEDRO_MODULES = [
 
 
 def get_classes(module):
+    # Validate module name against whitelist to prevent arbitrary code execution
+    if module not in KEDRO_MODULES:
+        raise ValueError(f"Module {module} is not in the allowed whitelist")
     importlib.import_module(module)
     return [obj[0] for obj in getmembers(sys.modules[module], lambda obj: isclass(obj))]
 
 
 def get_functions(module):
+    # Validate module name against whitelist to prevent arbitrary code execution
+    if module not in KEDRO_MODULES:
+        raise ValueError(f"Module {module} is not in the allowed whitelist")
     importlib.import_module(module)
     return [
         obj[0] for obj in getmembers(sys.modules[module], lambda obj: isfunction(obj))

@@ -305,7 +305,10 @@ class AbstractDataset(abc.ABC, Generic[_DI, _DO]):
                 message = f"Failed while loading data from dataset {self!s}.\n{exc!s}"
                 raise DatasetError(message) from exc
 
-        load.__annotations__["return"] = load_func.__annotations__.get("return")
+        # Safely copy annotation only if it's a safe type or None
+        return_annotation = load_func.__annotations__.get("return")
+        if return_annotation is None or isinstance(return_annotation, type) or hasattr(return_annotation, "__module__"):
+            load.__annotations__["return"] = return_annotation
         load.__loadwrapped__ = True  # type: ignore[attr-defined]
         return load
 
@@ -329,8 +332,13 @@ class AbstractDataset(abc.ABC, Generic[_DI, _DO]):
                 message = f"Failed while saving data to dataset {self!s}.\n{exc!s}"
                 raise DatasetError(message) from exc
 
-        save.__annotations__["data"] = save_func.__annotations__.get("data", Any)
-        save.__annotations__["return"] = save_func.__annotations__.get("return")
+        # Safely copy annotations only if they are safe types or None
+        data_annotation = save_func.__annotations__.get("data", Any)
+        if data_annotation is None or isinstance(data_annotation, type) or hasattr(data_annotation, "__module__"):
+            save.__annotations__["data"] = data_annotation
+        return_annotation = save_func.__annotations__.get("return")
+        if return_annotation is None or isinstance(return_annotation, type) or hasattr(return_annotation, "__module__"):
+            save.__annotations__["return"] = return_annotation
         save.__savewrapped__ = True  # type: ignore[attr-defined]
         return save
 
